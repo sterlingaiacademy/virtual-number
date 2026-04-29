@@ -17,7 +17,7 @@ export default function AdminClientsPage() {
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({
     business_name: '', email: '', phone: '', plan_id: '', address: '',
-    elevenlabs_agent_id: '', elevenlabs_api_key: ''
+    elevenlabs_agent_id: '', elevenlabs_api_key: '', password: ''
   });
   const [plans, setPlans] = useState<any[]>([]);
 
@@ -51,13 +51,13 @@ export default function AdminClientsPage() {
         address: form.address,
         plan: form.plan_id, // this is now storing the plan name
         login_email: form.email,
-        login_password: 'Password123!', // Temporary default password
+        login_password: form.password, // User-defined password
         elevenlabs_agent_id: form.elevenlabs_agent_id,
         elevenlabs_api_key: form.elevenlabs_api_key || undefined,
       };
       await adminApi.createClient(payload);
       setShowCreate(false);
-      setForm({ business_name: '', email: '', phone: '', plan_id: '', address: '', elevenlabs_agent_id: '', elevenlabs_api_key: '' });
+      setForm({ business_name: '', email: '', phone: '', plan_id: '', address: '', elevenlabs_agent_id: '', elevenlabs_api_key: '', password: '' });
       load();
     } catch (err: any) {
       alert(err.response?.data?.error || 'Failed to create client');
@@ -202,6 +202,11 @@ export default function AdminClientsPage() {
                     ))}
                   </select>
                 </div>
+                <div className="col-span-2">
+                  <label className="label">Initial Login Password</label>
+                  <input type="password" required minLength={8} className="input" placeholder="Set a temporary password for the client" value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })} />
+                </div>
                 <div>
                   <label className="label">ElevenLabs Agent ID</label>
                   <input className="input" required placeholder="e.g. 7601kj7akhhsf3..." value={form.elevenlabs_agent_id}
@@ -213,7 +218,7 @@ export default function AdminClientsPage() {
                     onChange={(e) => setForm({ ...form, elevenlabs_api_key: e.target.value })} />
                 </div>
               </div>
-              <p className="text-xs text-[#555570]">A temporary password will be emailed to the client.</p>
+              <p className="text-xs text-[#555570]">The client can use this password to log in and change it later.</p>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowCreate(false)} className="btn-secondary flex-1 justify-center">Cancel</button>
                 <button type="submit" className="btn-primary flex-1 justify-center" disabled={creating}>
