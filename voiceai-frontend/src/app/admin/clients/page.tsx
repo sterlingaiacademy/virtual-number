@@ -43,7 +43,16 @@ export default function AdminClientsPage() {
     e.preventDefault();
     setCreating(true);
     try {
-      await adminApi.createClient(form);
+      const payload = {
+        business_name: form.business_name,
+        contact_email: form.email,
+        contact_phone: form.phone,
+        address: form.address,
+        plan: form.plan_id, // this is now storing the plan name
+        login_email: form.email,
+        login_password: 'Password123!', // Temporary default password
+      };
+      await adminApi.createClient(payload);
       setShowCreate(false);
       setForm({ business_name: '', email: '', phone: '', plan_id: '', address: '' });
       load();
@@ -186,7 +195,7 @@ export default function AdminClientsPage() {
                     onChange={(e) => setForm({ ...form, plan_id: e.target.value })}>
                     <option value="">Select a plan…</option>
                     {plans.map((p) => (
-                      <option key={p.id} value={p.id}>{p.name} — ₹{p.monthly_fee}/mo</option>
+                      <option key={p.id} value={p.name}>{p.name} — ₹{p.monthly_fee}/mo</option>
                     ))}
                   </select>
                 </div>
