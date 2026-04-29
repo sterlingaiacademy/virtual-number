@@ -9,6 +9,9 @@ const nextConfig = {
       },
     ],
   },
+  env: {
+    NEXT_PUBLIC_API_URL: 'https://voiceai-api-335373057821.asia-south1.run.app',
+  },
   eslint: {
     ignoreDuringBuilds: true,
   },
