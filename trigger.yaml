@@ -1,0 +1,71 @@
+build:
+  images:
+  - $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+  options:
+    logging: CLOUD_LOGGING_ONLY
+    substitutionOption: ALLOW_LOOSE
+  steps:
+  - args:
+    - build
+    - --no-cache
+    - -t
+    - $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+    - voiceai-api
+    - -f
+    - voiceai-api/Dockerfile
+    id: Build
+    name: gcr.io/cloud-builders/docker
+  - args:
+    - push
+    - $_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+    id: Push
+    name: gcr.io/cloud-builders/docker
+  - args:
+    - run
+    - services
+    - update
+    - $_SERVICE_NAME
+    - --platform=managed
+    - --image=$_AR_HOSTNAME/$_AR_PROJECT_ID/$_AR_REPOSITORY/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+    - --labels=managed-by=gcp-cloud-build-deploy-cloud-run,commit-sha=$COMMIT_SHA,gcb-build-id=$BUILD_ID,gcb-trigger-id=$_TRIGGER_ID
+    - --region=$_DEPLOY_REGION
+    - --quiet
+    entrypoint: gcloud
+    id: Deploy
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+  substitutions:
+    _AR_HOSTNAME: asia-south1-docker.pkg.dev
+    _AR_PROJECT_ID: sterling-ai-workshop
+    _AR_REPOSITORY: cloud-run-source-deploy
+    _DEPLOY_REGION: asia-south1
+    _PLATFORM: managed
+    _SERVICE_NAME: voiceai-api
+    _TRIGGER_ID: d4a83201-443c-4386-b417-ca4e85382ecf
+  tags:
+  - gcp-cloud-build-deploy-cloud-run
+  - gcp-cloud-build-deploy-cloud-run-managed
+  - voiceai-api
+createTime: '2026-04-29T07:00:09.822063778Z'
+description: Build and deploy to Cloud Run service voiceai-api on push to "^main$"
+github:
+  name: virtual-number
+  owner: sterlingaiacademy
+  push:
+    branch: ^main$
+id: d4a83201-443c-4386-b417-ca4e85382ecf
+includeBuildLogs: INCLUDE_BUILD_LOGS_WITH_STATUS
+name: rmgpgab-voiceai-api-asia-south1-sterlingaiacademy-virtual-nunuc
+resourceName: projects/sterling-ai-workshop/locations/global/triggers/d4a83201-443c-4386-b417-ca4e85382ecf
+serviceAccount: projects/sterling-ai-workshop/serviceAccounts/335373057821-compute@developer.gserviceaccount.com
+substitutions:
+  _AR_HOSTNAME: asia-south1-docker.pkg.dev
+  _AR_PROJECT_ID: sterling-ai-workshop
+  _AR_REPOSITORY: cloud-run-source-deploy
+  _DEPLOY_REGION: asia-south1
+  _PLATFORM: managed
+  _SERVICE_NAME: voiceai-api
+  _TRIGGER_ID: d4a83201-443c-4386-b417-ca4e85382ecf
+tags:
+- gcp-cloud-build-deploy-cloud-run
+- gcp-cloud-build-deploy-cloud-run-managed
+- voiceai-api

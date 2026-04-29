@@ -3,10 +3,6 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const fs = require('fs');
-const path = require('path');
-const db = require('./db');
-
 const { globalLimiter } = require('./middleware/rateLimiter');
 const { errorHandler } = require('./middleware/errorHandler');
 const { authenticate, requireAdmin, requireClient } = require('./middleware/auth');
