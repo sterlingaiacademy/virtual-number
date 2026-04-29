@@ -139,10 +139,10 @@ export default function AdminClientsPage() {
                     </div>
                   </td>
                   <td>
-                    <div className="text-[#e8e8f0]">{c.email}</div>
-                    <div className="text-xs text-[#555570]">{c.phone}</div>
+                    <div className="text-[#e8e8f0]">{c.contact_email}</div>
+                    <div className="text-xs text-[#555570]">{c.contact_phone}</div>
                   </td>
-                  <td><span className="badge badge-info">{c.plan_name || 'No Plan'}</span></td>
+                  <td><span className="badge badge-info">{c.plan || 'No Plan'}</span></td>
                   <td><span className={statusColor(c.status)}>{c.status}</span></td>
                   <td className="text-[#8888aa]">{formatDate(c.created_at)}</td>
                   <td>
