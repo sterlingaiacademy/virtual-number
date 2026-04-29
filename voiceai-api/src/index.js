@@ -37,6 +37,7 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 const allowedOrigins = [
   process.env.FRONTEND_URL || 'https://app.sterlingaiacademy.com',
+  'https://voiceai-frontend-335373057821.asia-south1.run.app',
   'http://localhost:3000',
 ];
 app.use(cors({
