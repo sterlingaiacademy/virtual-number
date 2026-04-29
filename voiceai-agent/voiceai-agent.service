@@ -1,0 +1,28 @@
+# VoiceAI Agent — systemd service
+# Install: sudo cp voiceai-agent.service /etc/systemd/system/
+# Enable: sudo systemctl enable --now voiceai-agent
+
+[Unit]
+Description=VoiceAI LiveKit Python Agent
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=voiceai
+WorkingDirectory=/opt/voiceai-agent
+ExecStart=/opt/voiceai-agent/venv/bin/python agent.py start
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=voiceai-agent
+
+# Environment
+EnvironmentFile=/opt/voiceai-agent/.env
+
+# Limits
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
