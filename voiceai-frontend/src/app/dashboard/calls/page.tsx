@@ -16,9 +16,9 @@ export default function ClientCallsPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const res = await clientApi.getCalls({ search });
-      setCalls(res.data.calls || []);
-      setTotal(res.data.total || 0);
+      const res = await clientApi.getElevenLabsCalls();
+      setCalls(res.data.conversations || []);
+      setTotal(res.data.conversations?.length || 0);
     } finally {
       setLoading(false);
     }
@@ -29,64 +29,56 @@ export default function ClientCallsPage() {
   const openCall = async (call: any) => {
     setSelected(call);
     try {
-      const res = await clientApi.getCallTranscript(call.id);
+      const res = await clientApi.getElevenLabsCallDetail(call.conversation_id || call.id);
       setTranscript(res.data.transcript || []);
     } catch { setTranscript([]); }
   };
 
-  const downloadRec = async (callId: string) => {
-    const res = await clientApi.getCallRecording(callId);
-    window.open(res.data.url, '_blank');
+  const getDuration = (c: any) => c.call_duration_secs || c.metadata?.call_duration_secs || c.duration_seconds || 0;
+  const getDate = (c: any) => {
+    if (c.start_time_unix_secs) return new Date(c.start_time_unix_secs * 1000).toISOString();
+    return c.started_at || new Date().toISOString();
   };
 
   return (
     <div className="p-8 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Call History</h1>
-        <p className="text-[#8888aa] text-sm mt-1">{total} total calls</p>
+        <h1 className="text-2xl font-bold text-white">Call History (ElevenLabs)</h1>
+        <p className="text-[#8888aa] text-sm mt-1">{total} total conversations</p>
       </div>
 
       <div className="flex gap-3">
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#555570]" />
-          <input className="input pl-10 w-64" placeholder="Search by number…" value={search}
+          <input className="input pl-10 w-64" placeholder="Search conversations…" value={search}
             onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && load()} />
         </div>
-        <button className="btn-secondary" onClick={load}>Search</button>
+        <button className="btn-secondary" onClick={load}>Refresh</button>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2 table-container">
           <table className="table">
             <thead>
-              <tr><th>Caller</th><th>Duration</th><th>Status</th><th>Date</th><th></th></tr>
+              <tr><th>Agent Call</th><th>Duration</th><th>Status</th><th>Date</th><th></th></tr>
             </thead>
             <tbody>
               {loading
                 ? Array(8).fill(0).map((_, i) => <tr key={i}><td colSpan={5}><div className="h-10 shimmer rounded" /></td></tr>)
                 : calls.map((c) => (
-                  <tr key={c.id} className="cursor-pointer" onClick={() => openCall(c)}>
+                  <tr key={c.conversation_id || c.id} className="cursor-pointer" onClick={() => openCall(c)}>
                     <td>
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 bg-blue-500/10 rounded-full flex items-center justify-center">
                           <PhoneIncoming className="w-3.5 h-3.5 text-blue-400" />
                         </div>
-                        <span className="font-mono text-sm">{c.caller_number || 'Unknown'}</span>
+                        <span className="font-mono text-sm">{c.caller_number || c.metadata?.caller_id || 'VoiceAI Agent Call'}</span>
                       </div>
                     </td>
-                    <td><div className="flex items-center gap-1.5 text-[#8888aa]"><Clock className="w-3.5 h-3.5" />{formatDuration(c.duration_seconds)}</div></td>
-                    <td><span className={statusColor(c.status)}>{c.status}</span></td>
-                    <td className="text-[#555570] text-xs">{formatDate(c.started_at)}</td>
-                    <td>
-                      <div className="flex items-center gap-1">
-                        {c.recording_url && (
-                          <button onClick={(e) => { e.stopPropagation(); downloadRec(c.id); }} className="btn-secondary btn-sm p-1.5">
-                            <Download className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                        <ChevronRight className="w-4 h-4 text-[#555570]" />
-                      </div>
-                    </td>
+                    <td><div className="flex items-center gap-1.5 text-[#8888aa]"><Clock className="w-3.5 h-3.5" />{formatDuration(getDuration(c))}</div></td>
+                    <td><span className={statusColor(c.status || 'success')}>{c.status || 'Successful'}</span></td>
+                    <td className="text-[#555570] text-xs">{formatDate(getDate(c))}</td>
+                    <td><ChevronRight className="w-4 h-4 text-[#555570]" /></td>
                   </tr>
                 ))}
             </tbody>
@@ -98,19 +90,22 @@ export default function ClientCallsPage() {
             <>
               <div className="mb-4">
                 <h3 className="font-semibold text-white text-sm">Transcript</h3>
-                <p className="text-xs text-[#555570] mt-1">{selected.caller_number} — {formatDuration(selected.duration_seconds)}</p>
+                <p className="text-xs text-[#555570] mt-1">Duration: {formatDuration(getDuration(selected))}</p>
               </div>
               <div className="space-y-3 max-h-96 overflow-y-auto">
                 {transcript.length === 0
-                  ? <p className="text-[#555570] text-sm text-center py-8">No transcript available</p>
-                  : transcript.map((t, i) => (
-                    <div key={i} className={`flex gap-2 ${t.role === 'agent' ? 'flex-row-reverse' : ''}`}>
-                      <div className="text-xs px-3 py-2 rounded-xl max-w-[85%]"
-                        style={{ background: t.role === 'agent' ? 'rgba(108,71,255,0.15)' : '#16161f', color: t.role === 'agent' ? '#c4b5fd' : '#e8e8f0' }}>
-                        {t.text || t.message}
-                      </div>
-                    </div>
-                  ))}
+                  ? <p className="text-[#555570] text-sm text-center py-8">Loading transcript...</p>
+                  : transcript.map((t, i) => {
+                      const isAgent = t.role === 'agent' || t.role === 'ai';
+                      return (
+                        <div key={i} className={`flex gap-2 ${isAgent ? 'flex-row-reverse' : ''}`}>
+                          <div className="text-xs px-3 py-2 rounded-xl max-w-[85%]"
+                            style={{ background: isAgent ? 'rgba(108,71,255,0.15)' : '#16161f', color: isAgent ? '#c4b5fd' : '#e8e8f0' }}>
+                            {t.text || t.message || t.content}
+                          </div>
+                        </div>
+                      );
+                  })}
               </div>
             </>
           ) : (

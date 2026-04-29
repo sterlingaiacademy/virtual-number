@@ -39,6 +39,47 @@ router.get('/', async (req, res, next) => {
   }
 });
 
+// GET /api/client/calls/elevenlabs
+router.get('/elevenlabs', async (req, res, next) => {
+  try {
+    const { elevenLabsService } = require('../../services/elevenLabsService');
+    const result = await db.query(
+      'SELECT elevenlabs_agent_id, elevenlabs_api_key FROM clients WHERE id = $1',
+      [req.user.client_id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Client not found' });
+    
+    const { elevenlabs_agent_id, elevenlabs_api_key } = result.rows[0];
+    if (!elevenlabs_agent_id) {
+      return res.json({ conversations: [] }); // No agent configured yet
+    }
+
+    const data = await elevenLabsService.getAgentConversations(elevenlabs_agent_id, elevenlabs_api_key);
+    res.json(data);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/client/calls/elevenlabs/:id
+router.get('/elevenlabs/:conversationId', async (req, res, next) => {
+  try {
+    const { elevenLabsService } = require('../../services/elevenLabsService');
+    const result = await db.query(
+      'SELECT elevenlabs_agent_id, elevenlabs_api_key FROM clients WHERE id = $1',
+      [req.user.client_id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Client not found' });
+    
+    // Using the getCallTranscript method from the service which calls /v1/convai/conversations/{conversationId}
+    const { elevenlabs_api_key } = result.rows[0];
+    const data = await elevenLabsService.getCallTranscript(req.params.conversationId, elevenlabs_api_key);
+    res.json(data);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /api/client/calls/:id
 router.get('/:id', async (req, res, next) => {
   try {

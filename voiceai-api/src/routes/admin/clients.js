@@ -63,7 +63,8 @@ router.post('/', async (req, res, next) => {
     await client.query('BEGIN');
     const {
       business_name, contact_email, contact_phone, address,
-      plan = 'trial', login_email, login_password
+      plan = 'trial', login_email, login_password,
+      elevenlabs_agent_id, elevenlabs_api_key
     } = req.body;
 
     if (!business_name || !contact_email) {
@@ -72,12 +73,21 @@ router.post('/', async (req, res, next) => {
 
     // Create client record
     const clientResult = await client.query(
-      `INSERT INTO clients (business_name, contact_email, contact_phone, address, plan, status)
-       VALUES ($1, $2, $3, $4, $5, 'active')
+      `INSERT INTO clients (business_name, contact_email, contact_phone, address, plan, status, elevenlabs_agent_id, elevenlabs_api_key)
+       VALUES ($1, $2, $3, $4, $5, 'active', $6, $7)
        RETURNING *`,
-      [business_name, contact_email, contact_phone, address, plan]
+      [business_name, contact_email, contact_phone, address, plan, elevenlabs_agent_id, elevenlabs_api_key]
     );
     const newClient = clientResult.rows[0];
+
+    // Automatically create ai_agents record if agent ID provided
+    if (elevenlabs_agent_id) {
+      await client.query(
+        `INSERT INTO ai_agents (client_id, elevenlabs_agent_id, agent_name)
+         VALUES ($1, $2, $3)`,
+        [newClient.id, elevenlabs_agent_id, `${business_name} Support Agent`]
+      );
+    }
 
     // Create login user for client
     if (login_email && login_password) {

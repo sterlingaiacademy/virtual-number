@@ -124,6 +124,8 @@ export const clientApi = {
   getCalls: (params?: Record<string, any>) => api.get('/api/client/calls', { params }),
   getCallTranscript: (id: string) => api.get(`/api/client/calls/${id}/transcript`),
   getCallRecording: (id: string) => api.get(`/api/client/calls/${id}/recording`),
+  getElevenLabsCalls: () => api.get('/api/client/calls/elevenlabs'),
+  getElevenLabsCallDetail: (id: string) => api.get(`/api/client/calls/elevenlabs/${id}`),
 
   getAgent: () => api.get('/api/client/agent'),
   updateAgent: (data: any) => api.patch('/api/client/agent', data),

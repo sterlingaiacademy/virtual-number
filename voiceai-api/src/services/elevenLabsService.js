@@ -121,8 +121,24 @@ const elevenLabsService = {
   /**
    * Get call transcript from ElevenLabs
    */
-  async getCallTranscript(conversationId) {
-    const res = await elevenlabs.get(`/convai/conversations/${conversationId}`);
+  async getCallTranscript(conversationId, customApiKey = null) {
+    const config = {};
+    if (customApiKey) {
+      config.headers = { 'xi-api-key': customApiKey };
+    }
+    const res = await elevenlabs.get(`/convai/conversations/${conversationId}`, config);
+    return res.data;
+  },
+
+  /**
+   * Get a list of conversations for a specific agent directly from ElevenLabs
+   */
+  async getAgentConversations(agentId, customApiKey = null) {
+    const config = {};
+    if (customApiKey) {
+      config.headers = { 'xi-api-key': customApiKey };
+    }
+    const res = await elevenlabs.get(`/convai/conversations?agent_id=${agentId}`, config);
     return res.data;
   },
 };
