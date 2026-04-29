@@ -34,10 +34,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Rehydrate from localStorage
     const storedToken = localStorage.getItem('voiceai_token');
     const storedUser = localStorage.getItem('voiceai_user');
+    
     if (storedToken && storedUser) {
       setToken(storedToken);
       setUser(JSON.parse(storedUser));
+    } else if (process.env.NODE_ENV === 'development') {
+      // Auto-login for local UI testing
+      const fakeAdmin = { id: 'dev-admin', email: 'admin@company.com', role: 'admin' as const };
+      setToken('dev-token');
+      setUser(fakeAdmin);
     }
+    
     setLoading(false);
   }, []);
 

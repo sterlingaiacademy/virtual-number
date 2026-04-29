@@ -15,6 +15,13 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    
+    // Auto-bypass login for local testing
+    if (process.env.NODE_ENV === 'development') {
+      window.location.href = '/admin';
+      return;
+    }
+
     setLoading(true);
     try {
       await login(email, password);

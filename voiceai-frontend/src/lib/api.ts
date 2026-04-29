@@ -16,7 +16,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Auto-logout on 401
+// Auto-logout on 401 and mock data for local dev
 api.interceptors.response.use(
   (res) => res,
   (err) => {
@@ -25,6 +25,35 @@ api.interceptors.response.use(
       localStorage.removeItem('voiceai_user');
       window.location.href = '/login';
     }
+
+    // LOCAL UI PREVIEW MOCK DATA
+    if (process.env.NODE_ENV === 'development') {
+      const url = err.config.url || '';
+      console.log('Mocking response for', url);
+      
+      // MOCK ADMIN DASHBOARD
+      if (url.includes('/api/admin/stats/overview')) return Promise.resolve({ data: { total_clients: 42, total_numbers: 15, total_calls_today: 1250, revenue_this_month: 45000, pending_invoices: 3 } });
+      if (url.includes('/api/admin/stats/calls-chart')) return Promise.resolve({ data: { data: [{date:'Mon', calls:120}, {date:'Tue', calls:450}, {date:'Wed', calls:300}, {date:'Thu', calls:500}, {date:'Fri', calls:480}, {date:'Sat', calls:200}, {date:'Sun', calls:150}] } });
+      if (url.includes('/api/admin/stats/top-clients')) return Promise.resolve({ data: { clients: [{business_name: 'TechCorp India', total_calls: 5400, revenue: 12000}, {business_name: 'Metro Hospitals', total_calls: 3200, revenue: 8500}] } });
+      
+      // MOCK ADMIN LISTS
+      if (url.includes('/api/admin/clients')) return Promise.resolve({ data: { clients: [{id:'1', business_name:'TechCorp', email:'admin@techcorp.in', plan_name:'Pro', status:'active', created_at: new Date().toISOString()}], total: 1 } });
+      if (url.includes('/api/admin/numbers')) return Promise.resolve({ data: { numbers: [{id:'1', phone_number:'+919876543210', status:'active', sip_trunk_name:'Twilio India', business_name:'TechCorp'}], total: 1 } });
+      if (url.includes('/api/admin/calls')) return Promise.resolve({ data: { calls: [{id:'1', caller_number:'+919999999999', business_name:'TechCorp', duration_seconds:145, status:'completed', started_at: new Date().toISOString()}], total: 1 } });
+      if (url.includes('/api/admin/billing')) return Promise.resolve({ data: { invoices: [], total: 0 } });
+      if (url.includes('/api/admin/settings')) return Promise.resolve({ data: { plans: [{id:'plan_1', name:'Starter', monthly_fee: 1000, per_minute_rate: 2}, {id:'plan_2', name:'Pro', monthly_fee: 5000, per_minute_rate: 1.5}] } });
+      
+      // MOCK CLIENT DASHBOARD
+      if (url.includes('/api/client/stats/overview')) return Promise.resolve({ data: { calls_this_month: 520, total_seconds_this_month: 35000, phone_number: '+919876543210', plan_name: 'Pro' } });
+      if (url.includes('/api/client/stats/calls-chart')) return Promise.resolve({ data: { data: [{date:'Mon', calls:50}, {date:'Tue', calls:120}, {date:'Wed', calls:90}] } });
+      if (url.includes('/api/client/calls')) return Promise.resolve({ data: { calls: [{id:'1', caller_number:'+919999999999', duration_seconds:145, status:'completed', started_at: new Date().toISOString()}], total: 1 } });
+      if (url.includes('/api/client/agent')) return Promise.resolve({ data: { name:'Support AI', voice_id:'', system_prompt:'You are a helpful assistant.', first_message:'Hello!', language:'en', available_voices: [{voice_id:'123', name:'Priya (Indian English)'}] } });
+      if (url.includes('/api/client/knowledge')) return Promise.resolve({ data: { documents: [] } });
+      if (url.includes('/api/client/billing')) return Promise.resolve({ data: { plan: {name:'Pro', monthly_fee: 5000, per_minute_rate: 1.5}, pending_amount: 0, invoices: [] } });
+
+      return Promise.resolve({ data: {} });
+    }
+
     return Promise.reject(err);
   }
 );
