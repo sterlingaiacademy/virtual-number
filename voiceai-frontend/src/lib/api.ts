@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://voiceai-api-niiorsa2ra-el.a.run.app';
 
 export const api = axios.create({
   baseURL: API_BASE,
