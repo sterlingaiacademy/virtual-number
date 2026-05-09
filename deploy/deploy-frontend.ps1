@@ -4,8 +4,11 @@ $REGION = "asia-south1"
 $SERVICE_NAME = "voiceai-frontend"
 $IMAGE = "gcr.io/$PROJECT_ID/$SERVICE_NAME"
 
-Write-Host "Building frontend image..."
+Write-Host "Setting API URL for Next.js build..."
 Push-Location "$PSScriptRoot\..\voiceai-frontend"
+Set-Content -Path ".env.production" -Value "NEXT_PUBLIC_API_URL=https://voiceai-api-niiorsa2ra-el.a.run.app"
+
+Write-Host "Building frontend image..."
 gcloud builds submit --tag $IMAGE .
 
 Write-Host "Deploying frontend to Cloud Run..."
