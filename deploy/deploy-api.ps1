@@ -21,7 +21,7 @@ gcloud run deploy $SERVICE_NAME `
   --min-instances 0 `
   --max-instances 10 `
   --add-cloudsql-instances $DB_INSTANCE `
-  --set-env-vars "NODE_ENV=production,GCP_PROJECT_ID=$PROJECT_ID" `
+  --set-env-vars "NODE_ENV=production,GCP_PROJECT_ID=$PROJECT_ID,FRONTEND_URL=https://voiceai-frontend-niiorsa2ra-el.a.run.app" `
   --set-secrets "JWT_SECRET=voiceai-jwt-secret:latest,DATABASE_URL=voiceai-db-url:latest,ELEVENLABS_API_KEY=voiceai-elevenlabs-key:latest,INTERNAL_API_SECRET=voiceai-internal-secret:latest" `
   --quiet
 
