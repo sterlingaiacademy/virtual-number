@@ -89,14 +89,33 @@ router.post('/', async (req, res, next) => {
       );
     }
 
-    // Create login user for client
+    // Create or update login user for client
     if (login_email && login_password) {
+      const email = login_email.toLowerCase();
       const hash = await bcrypt.hash(login_password, 12);
-      await client.query(
-        `INSERT INTO users (email, password_hash, role, client_id)
-         VALUES ($1, $2, 'client', $3)`,
-        [login_email.toLowerCase(), hash, newClient.id]
-      );
+      
+      const existingUser = await client.query('SELECT id, client_id, role FROM users WHERE email = $1', [email]);
+      if (existingUser.rows.length > 0) {
+        const u = existingUser.rows[0];
+        if (u.client_id !== null) {
+          await client.query('ROLLBACK');
+          return res.status(400).json({ error: 'Email already in use by another active user' });
+        } else if (u.role !== 'client') {
+          await client.query('ROLLBACK');
+          return res.status(400).json({ error: 'Email is used by an admin account' });
+        }
+        // It is an orphaned user, update it
+        await client.query(
+          `UPDATE users SET password_hash = $1, client_id = $2 WHERE email = $3`,
+          [hash, newClient.id, email]
+        );
+      } else {
+        await client.query(
+          `INSERT INTO users (email, password_hash, role, client_id)
+           VALUES ($1, $2, 'client', $3)`,
+          [email, hash, newClient.id]
+        );
+      }
     }
 
     await client.query('COMMIT');
@@ -159,12 +178,34 @@ router.put('/:id', async (req, res, next) => {
 
 // DELETE /api/admin/clients/:id
 router.delete('/:id', async (req, res, next) => {
+  const client = await db.getClient();
   try {
-    const result = await db.query('DELETE FROM clients WHERE id = $1 RETURNING id', [req.params.id]);
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Client not found' });
+    await client.query('BEGIN');
+    
+    // Clean up related records that don't have CASCADE
+    await client.query("DELETE FROM users WHERE client_id = $1 AND role = 'client'", [req.params.id]);
+    await client.query("UPDATE virtual_numbers SET status = 'available', assigned_at = NULL, client_id = NULL WHERE client_id = $1", [req.params.id]);
+    
+    // Check for calls to prevent foreign key errors (or we could delete them, but better to restrict)
+    const calls = await client.query('SELECT id FROM calls WHERE client_id = $1 LIMIT 1', [req.params.id]);
+    if (calls.rows.length > 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Cannot delete client with existing call records' });
+    }
+
+    const result = await client.query('DELETE FROM clients WHERE id = $1 RETURNING id', [req.params.id]);
+    if (result.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Client not found' });
+    }
+    
+    await client.query('COMMIT');
     res.json({ message: 'Client deleted' });
   } catch (err) {
+    await client.query('ROLLBACK');
     next(err);
+  } finally {
+    client.release();
   }
 });
 

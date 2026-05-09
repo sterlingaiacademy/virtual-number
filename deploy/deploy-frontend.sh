@@ -2,8 +2,8 @@
 # deploy-frontend.sh — Build and deploy voiceai-frontend to Cloud Run
 set -euo pipefail
 
-PROJECT_ID="sterling-ai-workshop"
-REGION="europe-west1"
+PROJECT_ID="aivoice-agent"
+REGION="asia-south1"
 SERVICE_NAME="voiceai-frontend"
 IMAGE="gcr.io/$PROJECT_ID/$SERVICE_NAME"
 

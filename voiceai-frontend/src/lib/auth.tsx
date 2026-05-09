@@ -9,7 +9,9 @@ interface User {
   email: string;
   role: 'admin' | 'client';
   client_id?: string;
-  business_name?: string;
+  clientId?: string;
+  businessName?: string;
+  business_name?: string; // alias
 }
 
 interface AuthContextType {

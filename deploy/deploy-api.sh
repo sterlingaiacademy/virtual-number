@@ -2,8 +2,8 @@
 # deploy-api.sh — Build and deploy voiceai-api to Cloud Run
 set -euo pipefail
 
-PROJECT_ID="sterling-ai-workshop"
-REGION="europe-west1"
+PROJECT_ID="aivoice-agent"
+REGION="asia-south1"
 SERVICE_NAME="voiceai-api"
 IMAGE="gcr.io/$PROJECT_ID/$SERVICE_NAME"
 DB_INSTANCE="$PROJECT_ID:$REGION:voiceai-db"

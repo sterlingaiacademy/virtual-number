@@ -2,7 +2,7 @@ const { Storage } = require('@google-cloud/storage');
 const { PubSub } = require('@google-cloud/pubsub');
 const { SecretManagerServiceClient } = require('@google-cloud/secret-manager');
 
-const PROJECT_ID = process.env.GCP_PROJECT_ID || 'sterling-ai-workshop';
+const PROJECT_ID = process.env.GCP_PROJECT_ID || 'aivoice-agent';
 
 const storage = new Storage({ projectId: PROJECT_ID });
 const pubsub = new PubSub({ projectId: PROJECT_ID });

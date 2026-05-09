@@ -5,8 +5,8 @@
 
 set -euo pipefail
 
-PROJECT_ID="sterling-ai-workshop"
-REGION="europe-west1"
+PROJECT_ID="aivoice-agent"
+REGION="asia-south1"
 DB_INSTANCE="voiceai-db"
 DB_NAME="voiceai"
 DB_USER="voiceai_user"

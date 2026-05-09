@@ -33,7 +33,7 @@ export default function ClientDashboard() {
     <div className="p-8 space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-white">
-          Welcome back, <span className="gradient-text">{user?.business_name || 'there'}</span>
+          Welcome back, <span className="gradient-text">{user?.businessName || user?.business_name || 'there'}</span>
         </h1>
         <p className="text-[#8888aa] text-sm mt-1">Here's your AI agent activity</p>
       </div>

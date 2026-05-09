@@ -35,7 +35,7 @@ build:
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
   substitutions:
     _AR_HOSTNAME: asia-south1-docker.pkg.dev
-    _AR_PROJECT_ID: sterling-ai-workshop
+    _AR_PROJECT_ID: aivoice-agent
     _AR_REPOSITORY: cloud-run-source-deploy
     _DEPLOY_REGION: asia-south1
     _PLATFORM: managed
@@ -55,11 +55,11 @@ github:
 id: d4a83201-443c-4386-b417-ca4e85382ecf
 includeBuildLogs: INCLUDE_BUILD_LOGS_WITH_STATUS
 name: rmgpgab-voiceai-api-asia-south1-sterlingaiacademy-virtual-nunuc
-resourceName: projects/sterling-ai-workshop/locations/global/triggers/d4a83201-443c-4386-b417-ca4e85382ecf
-serviceAccount: projects/sterling-ai-workshop/serviceAccounts/335373057821-compute@developer.gserviceaccount.com
+resourceName: projects/aivoice-agent/locations/global/triggers/d4a83201-443c-4386-b417-ca4e85382ecf
+serviceAccount: projects/aivoice-agent/serviceAccounts/335373057821-compute@developer.gserviceaccount.com
 substitutions:
   _AR_HOSTNAME: asia-south1-docker.pkg.dev
-  _AR_PROJECT_ID: sterling-ai-workshop
+  _AR_PROJECT_ID: aivoice-agent
   _AR_REPOSITORY: cloud-run-source-deploy
   _DEPLOY_REGION: asia-south1
   _PLATFORM: managed

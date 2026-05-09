@@ -2,7 +2,7 @@
 # setup-dns.sh — Configure Cloud DNS for VoiceAI domains
 set -euo pipefail
 
-PROJECT_ID="sterling-ai-workshop"
+PROJECT_ID="aivoice-agent"
 ZONE_NAME="sterlingaiacademy-zone"
 DOMAIN="sterlingaiacademy.com."
 

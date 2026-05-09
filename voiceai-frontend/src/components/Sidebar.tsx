@@ -85,7 +85,7 @@ export function Sidebar({ variant }: SidebarProps) {
           </div>
           <div className="min-w-0">
             <div className="text-xs font-medium text-white truncate">
-              {user?.business_name || 'Admin'}
+              {user?.businessName || user?.business_name || (user?.role === 'admin' ? 'Admin' : user?.email?.split('@')[0])}
             </div>
             <div className="text-[10px] text-[#555570] truncate">{user?.email}</div>
           </div>

@@ -2,8 +2,8 @@
 # run-migrations.sh — Run DB migrations via Cloud SQL Auth Proxy
 set -euo pipefail
 
-PROJECT_ID="sterling-ai-workshop"
-REGION="europe-west1"
+PROJECT_ID="aivoice-agent"
+REGION="asia-south1"
 DB_INSTANCE="$PROJECT_ID:$REGION:voiceai-db"
 DB_NAME="voiceai"
 DB_USER="voiceai_user"

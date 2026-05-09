@@ -28,8 +28,8 @@ export default function AdminClientsPage() {
         adminApi.getClients({ search: q }),
         adminApi.getSettings(),
       ]);
-      setClients(clientRes.data.clients || []);
-      setTotal(clientRes.data.total || 0);
+      setClients(clientRes.data.data || []);
+      setTotal(clientRes.data.pagination?.total || 0);
       setPlans(settingsRes.data.plans || []);
     } finally {
       setLoading(false);
