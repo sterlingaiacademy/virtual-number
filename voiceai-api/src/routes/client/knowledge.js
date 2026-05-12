@@ -22,12 +22,30 @@ const upload = multer({
 // GET /api/client/knowledge
 router.get('/', async (req, res, next) => {
   try {
-    const result = await db.query(
-      'SELECT * FROM knowledge_documents WHERE client_id = $1 ORDER BY created_at DESC',
+    const agentResult = await db.query(
+      'SELECT elevenlabs_agent_id FROM ai_agents WHERE client_id = $1',
       [req.user.client_id]
     );
-    res.json(result.rows);
+
+    if (agentResult.rows.length === 0 || !agentResult.rows[0].elevenlabs_agent_id) {
+       return res.json({ documents: [] });
+    }
+
+    const agentId = agentResult.rows[0].elevenlabs_agent_id;
+    const agent = await elevenLabsService.getAgent(agentId);
+
+    const kb = agent.conversation_config?.agent?.prompt?.knowledge_base || [];
+
+    const documents = kb.map(doc => ({
+      id: doc.id,
+      name: doc.name,
+      mime_type: doc.type === 'file' ? 'application/pdf' : 'text/plain',
+      created_at: new Date().toISOString()
+    }));
+
+    res.json({ documents });
   } catch (err) {
+    console.error('Failed to fetch KB from ElevenLabs:', err);
     next(err);
   }
 });
@@ -64,8 +82,9 @@ router.post('/upload', upload.single('file'), async (req, res, next) => {
 
     if (agentResult.rows.length > 0) {
       const agentId = agentResult.rows[0].elevenlabs_agent_id;
-      elevenLabsService.uploadKnowledgeDoc(agentId, req.file.buffer, req.file.originalname, req.file.mimetype)
-        .then(async (kbId) => {
+      elevenLabsService.uploadKnowledgeBaseFile(agentId, req.file.buffer, req.file.originalname, req.file.mimetype)
+        .then(async (result) => {
+          const kbId = result.id || result;
           await db.query(
             "UPDATE knowledge_documents SET elevenlabs_kb_id = $1, status = 'ready' WHERE id = $2",
             [kbId, doc.id]
@@ -89,21 +108,34 @@ router.post('/upload', upload.single('file'), async (req, res, next) => {
 // DELETE /api/client/knowledge/:id
 router.delete('/:id', async (req, res, next) => {
   try {
-    const result = await db.query(
-      'SELECT * FROM knowledge_documents WHERE id = $1 AND client_id = $2',
-      [req.params.id, req.user.client_id]
+    const agentResult = await db.query(
+      'SELECT elevenlabs_agent_id FROM ai_agents WHERE client_id = $1',
+      [req.user.client_id]
     );
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Document not found' });
-
-    const doc = result.rows[0];
-    // Delete from GCS
-    try {
-      await storageService.deleteFile(process.env.GCS_KNOWLEDGE_BUCKET, doc.gcs_path);
-    } catch (e) {
-      console.warn('GCS deletion failed (non-fatal):', e.message);
+    
+    if (agentResult.rows.length > 0 && agentResult.rows[0].elevenlabs_agent_id) {
+      try {
+        await elevenLabsService.deleteKnowledgeBaseDoc(agentResult.rows[0].elevenlabs_agent_id, req.params.id);
+      } catch (e) {
+        console.warn('ElevenLabs KB deletion failed (non-fatal):', e.message);
+      }
     }
 
-    await db.query('DELETE FROM knowledge_documents WHERE id = $1', [req.params.id]);
+    const result = await db.query(
+      'SELECT * FROM knowledge_documents WHERE (id::text = $1 OR elevenlabs_kb_id = $1) AND client_id = $2',
+      [req.params.id, req.user.client_id]
+    );
+
+    if (result.rows.length > 0) {
+      const doc = result.rows[0];
+      try {
+        await storageService.deleteFile(process.env.GCS_KNOWLEDGE_BUCKET, doc.gcs_path);
+      } catch (e) {
+        console.warn('GCS deletion failed (non-fatal):', e.message);
+      }
+      await db.query('DELETE FROM knowledge_documents WHERE id = $1', [doc.id]);
+    }
+
     res.json({ message: 'Document deleted' });
   } catch (err) {
     next(err);
