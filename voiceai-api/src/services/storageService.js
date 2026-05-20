@@ -1,4 +1,4 @@
-const { getStorage } = require('../config/gcp');
+const { storage } = require('../config/gcp');
 const path = require('path');
 
 const BUCKET = process.env.GCS_BUCKET || 'voiceai-recordings';
@@ -9,7 +9,6 @@ const storageService = {
    * Returns the GCS URI (gs://bucket/path)
    */
   async uploadFile(fileBuffer, destPath, mimeType = 'application/octet-stream') {
-    const storage = getStorage();
     const bucket = storage.bucket(BUCKET);
     const file = bucket.file(destPath);
 
@@ -25,7 +24,6 @@ const storageService = {
    * Upload a local file stream to GCS
    */
   async uploadStream(readStream, destPath, mimeType = 'application/octet-stream') {
-    const storage = getStorage();
     const bucket = storage.bucket(BUCKET);
     const file = bucket.file(destPath);
 
@@ -44,7 +42,6 @@ const storageService = {
    * Generate a signed URL for temporary access (e.g. recording download)
    */
   async getSignedUrl(gcsUri, expiresInMinutes = 60) {
-    const storage = getStorage();
     // Parse gs:// URI
     const withoutScheme = gcsUri.replace('gs://', '');
     const slashIdx = withoutScheme.indexOf('/');
@@ -66,7 +63,6 @@ const storageService = {
    * Delete a file from GCS
    */
   async deleteFile(gcsUri) {
-    const storage = getStorage();
     const withoutScheme = gcsUri.replace('gs://', '');
     const slashIdx = withoutScheme.indexOf('/');
     const bucketName = withoutScheme.slice(0, slashIdx);
@@ -94,7 +90,6 @@ const storageService = {
    * Upload buffer directly to a specific bucket
    */
   async uploadBuffer(bucketName, destPath, fileBuffer, mimeType = 'application/octet-stream') {
-    const storage = getStorage();
     const bucket = storage.bucket(bucketName);
     const file = bucket.file(destPath);
 
@@ -109,7 +104,6 @@ const storageService = {
    * Download a file buffer from a specific bucket
    */
   async downloadBuffer(bucketName, destPath) {
-    const storage = getStorage();
     const bucket = storage.bucket(bucketName);
     const file = bucket.file(destPath);
     
@@ -121,7 +115,6 @@ const storageService = {
    * Delete a file from a specific bucket
    */
   async deleteFileFromBucket(bucketName, destPath) {
-    const storage = getStorage();
     await storage.bucket(bucketName).file(destPath).delete({ ignoreNotFound: true });
   }
 };
