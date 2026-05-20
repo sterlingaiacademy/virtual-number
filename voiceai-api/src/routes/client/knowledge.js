@@ -61,7 +61,7 @@ router.post('/upload', upload.single('file'), async (req, res, next) => {
 
     // Upload to GCS
     await storageService.uploadBuffer(
-      process.env.GCS_KNOWLEDGE_BUCKET,
+      process.env.GCS_BUCKET || 'voiceai-recordings',
       gcsPath,
       req.file.buffer,
       req.file.mimetype
@@ -117,7 +117,7 @@ router.post('/text', async (req, res, next) => {
 
     // Upload text as a file to GCS
     await storageService.uploadBuffer(
-      process.env.GCS_KNOWLEDGE_BUCKET,
+      process.env.GCS_BUCKET || 'voiceai-recordings',
       gcsPath,
       Buffer.from(text, 'utf-8'),
       'text/plain'
@@ -222,7 +222,7 @@ router.get('/:id/content', async (req, res, next) => {
     if (!doc.gcs_path) return res.status(400).json({ error: 'Document has no text content stored locally' });
 
     // Read from GCS
-    const buffer = await storageService.downloadBuffer(process.env.GCS_KNOWLEDGE_BUCKET, doc.gcs_path);
+    const buffer = await storageService.downloadBuffer(process.env.GCS_BUCKET || 'voiceai-recordings', doc.gcs_path);
     res.json({ text: buffer.toString('utf-8') });
   } catch (err) {
     next(err);
@@ -266,7 +266,7 @@ router.put('/:id/text', async (req, res, next) => {
       // Overwrite GCS file
       if (doc.gcs_path) {
         await storageService.uploadBuffer(
-          process.env.GCS_KNOWLEDGE_BUCKET,
+          process.env.GCS_BUCKET || 'voiceai-recordings',
           doc.gcs_path,
           Buffer.from(text, 'utf-8'),
           'text/plain'
@@ -310,7 +310,7 @@ router.delete('/:id', async (req, res, next) => {
     if (result.rows.length > 0) {
       const doc = result.rows[0];
       try {
-        await storageService.deleteFileFromBucket(process.env.GCS_KNOWLEDGE_BUCKET, doc.gcs_path);
+        await storageService.deleteFileFromBucket(process.env.GCS_BUCKET || 'voiceai-recordings', doc.gcs_path);
       } catch (e) {
         console.warn('GCS deletion failed (non-fatal):', e.message);
       }
