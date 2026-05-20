@@ -86,7 +86,11 @@ export default function ClientKnowledgePage() {
   };
 
   const openEditModal = async (doc: any) => {
-    if (doc.type !== 'text') return;
+    // If it's explicitly a url, maybe we don't edit it yet, or we could handle it differently.
+    if (doc.type === 'url') {
+       alert("URL editing is not supported yet.");
+       return;
+    }
     setIsSubmitting(true);
     try {
       const res = await clientApi.getKnowledgeContent(doc.id);
@@ -165,8 +169,8 @@ export default function ClientKnowledgePage() {
             {filteredDocs.map((doc) => (
               <div 
                 key={doc.id} 
-                onClick={() => doc.type === 'text' ? openEditModal(doc) : null}
-                className={`flex items-start gap-4 p-4 border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors group ${doc.type === 'text' ? 'cursor-pointer' : ''}`}
+                onClick={() => doc.type !== 'url' ? openEditModal(doc) : null}
+                className={`flex items-start gap-4 p-4 border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors group ${doc.type !== 'url' ? 'cursor-pointer' : ''}`}
               >
                 <div className="mt-0.5">
                   {doc.type === 'url' ? <Globe className="w-6 h-6 text-gray-400" /> :
