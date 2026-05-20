@@ -40,6 +40,7 @@ router.get('/', async (req, res, next) => {
       id: doc.id,
       name: doc.name,
       mime_type: doc.type === 'file' ? 'application/pdf' : 'text/plain',
+      type: doc.type,
       created_at: new Date().toISOString()
     }));
 
@@ -100,6 +101,186 @@ router.post('/upload', upload.single('file'), async (req, res, next) => {
     }
 
     res.status(201).json(doc);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/client/knowledge/text
+router.post('/text', async (req, res, next) => {
+  try {
+    const { name, text } = req.body;
+    if (!name || !text) return res.status(400).json({ error: 'Name and text are required' });
+
+    const clientId = req.user.client_id;
+    const gcsPath = `knowledge/${clientId}/${Date.now()}_${name}.txt`;
+
+    // Upload text as a file to GCS
+    await storageService.uploadBuffer(
+      process.env.GCS_KNOWLEDGE_BUCKET,
+      gcsPath,
+      Buffer.from(text, 'utf-8'),
+      'text/plain'
+    );
+
+    const docResult = await db.query(
+      `INSERT INTO knowledge_documents (client_id, file_name, file_size, gcs_path, status)
+       VALUES ($1, $2, $3, $4, 'processing') RETURNING *`,
+      [clientId, `${name}.txt`, Buffer.byteLength(text, 'utf8'), gcsPath]
+    );
+    const doc = docResult.rows[0];
+
+    const agentResult = await db.query(
+      'SELECT elevenlabs_agent_id FROM ai_agents WHERE client_id = $1',
+      [clientId]
+    );
+
+    if (agentResult.rows.length > 0) {
+      const agentId = agentResult.rows[0].elevenlabs_agent_id;
+      elevenLabsService.createKnowledgeBaseDoc(agentId, { name, text })
+        .then(async (result) => {
+          const kbId = result.id || result;
+          await db.query(
+            "UPDATE knowledge_documents SET elevenlabs_kb_id = $1, status = 'ready' WHERE id = $2",
+            [kbId, doc.id]
+          );
+        })
+        .catch(async (err) => {
+          console.error('ElevenLabs KB text upload failed:', err.message);
+          await db.query(
+            "UPDATE knowledge_documents SET status = 'failed' WHERE id = $1",
+            [doc.id]
+          );
+        });
+    }
+    res.status(201).json(doc);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/client/knowledge/url
+router.post('/url', async (req, res, next) => {
+  try {
+    const { name, url } = req.body;
+    if (!name || !url) return res.status(400).json({ error: 'Name and url are required' });
+
+    const clientId = req.user.client_id;
+    
+    // Insert into DB with null gcs_path
+    const docResult = await db.query(
+      `INSERT INTO knowledge_documents (client_id, file_name, url, status)
+       VALUES ($1, $2, $3, 'processing') RETURNING *`,
+      [clientId, name, url]
+    );
+    const doc = docResult.rows[0];
+
+    const agentResult = await db.query(
+      'SELECT elevenlabs_agent_id FROM ai_agents WHERE client_id = $1',
+      [clientId]
+    );
+
+    if (agentResult.rows.length > 0) {
+      const agentId = agentResult.rows[0].elevenlabs_agent_id;
+      elevenLabsService.createKnowledgeBaseUrl(agentId, { name, url })
+        .then(async (result) => {
+          const kbId = result.id || result;
+          await db.query(
+            "UPDATE knowledge_documents SET elevenlabs_kb_id = $1, status = 'ready' WHERE id = $2",
+            [kbId, doc.id]
+          );
+        })
+        .catch(async (err) => {
+          console.error('ElevenLabs KB url upload failed:', err.message);
+          await db.query(
+            "UPDATE knowledge_documents SET status = 'failed' WHERE id = $1",
+            [doc.id]
+          );
+        });
+    }
+    res.status(201).json(doc);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/client/knowledge/:id/content
+router.get('/:id/content', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const clientId = req.user.client_id;
+
+    // Find the document in our DB using the ElevenLabs KB ID
+    const result = await db.query(
+      'SELECT * FROM knowledge_documents WHERE elevenlabs_kb_id = $1 AND client_id = $2',
+      [id, clientId]
+    );
+
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Document not found locally' });
+    const doc = result.rows[0];
+
+    if (!doc.gcs_path) return res.status(400).json({ error: 'Document has no text content stored locally' });
+
+    // Read from GCS
+    const buffer = await storageService.downloadBuffer(process.env.GCS_KNOWLEDGE_BUCKET, doc.gcs_path);
+    res.json({ text: buffer.toString('utf-8') });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /api/client/knowledge/:id/text
+router.put('/:id/text', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { name, text } = req.body;
+    const clientId = req.user.client_id;
+
+    const result = await db.query(
+      'SELECT * FROM knowledge_documents WHERE elevenlabs_kb_id = $1 AND client_id = $2',
+      [id, clientId]
+    );
+
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Document not found locally' });
+    const doc = result.rows[0];
+
+    // Delete old document from ElevenLabs
+    const agentResult = await db.query(
+      'SELECT elevenlabs_agent_id FROM ai_agents WHERE client_id = $1',
+      [clientId]
+    );
+
+    if (agentResult.rows.length > 0) {
+      const agentId = agentResult.rows[0].elevenlabs_agent_id;
+      
+      try {
+        await elevenLabsService.deleteKnowledgeBaseDoc(agentId, id);
+      } catch (e) {
+        console.warn('ElevenLabs KB old doc deletion failed:', e.message);
+      }
+
+      // Create new document
+      const newResult = await elevenLabsService.createKnowledgeBaseDoc(agentId, { name: name || doc.file_name, text });
+      const newKbId = newResult.id || newResult;
+
+      // Overwrite GCS file
+      if (doc.gcs_path) {
+        await storageService.uploadBuffer(
+          process.env.GCS_KNOWLEDGE_BUCKET,
+          doc.gcs_path,
+          Buffer.from(text, 'utf-8'),
+          'text/plain'
+        );
+      }
+
+      // Update DB with new kb_id
+      await db.query(
+        "UPDATE knowledge_documents SET elevenlabs_kb_id = $1 WHERE id = $2",
+        [newKbId, doc.id]
+      );
+    }
+    
+    res.json({ success: true });
   } catch (err) {
     next(err);
   }

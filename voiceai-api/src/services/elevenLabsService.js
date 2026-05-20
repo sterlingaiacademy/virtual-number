@@ -1,4 +1,4 @@
-const elevenlabs = require('../config/elevenlabs');
+const { elevenlabs } = require('../config/elevenlabs');
 
 const elevenLabsService = {
   /**
@@ -107,6 +107,18 @@ const elevenLabsService = {
 
     const res = await elevenlabs.post(`/convai/agents/${agentId}/knowledge-base`, form, {
       headers: form.getHeaders(),
+    });
+    return res.data;
+  },
+
+  /**
+   * Add a URL to the knowledge base
+   */
+  async createKnowledgeBaseUrl(agentId, { name, url }) {
+    const res = await elevenlabs.post(`/convai/agents/${agentId}/knowledge-base`, {
+      type: 'url',
+      name,
+      url,
     });
     return res.data;
   },

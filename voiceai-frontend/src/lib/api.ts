@@ -132,9 +132,13 @@ export const clientApi = {
 
   getKnowledge: () => api.get('/api/client/knowledge'),
   uploadKnowledge: (formData: FormData) =>
-    api.post('/api/client/knowledge', formData, {
+    api.post('/api/client/knowledge/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
+  createKnowledgeText: (data: { name: string, text: string }) => api.post('/api/client/knowledge/text', data),
+  createKnowledgeUrl: (data: { name: string, url: string }) => api.post('/api/client/knowledge/url', data),
+  getKnowledgeContent: (id: string) => api.get(`/api/client/knowledge/${id}/content`),
+  updateKnowledgeText: (id: string, data: { name?: string, text: string }) => api.put(`/api/client/knowledge/${id}/text`, data),
   deleteKnowledge: (id: string) => api.delete(`/api/client/knowledge/${id}`),
 
   getBilling: () => api.get('/api/client/billing'),
