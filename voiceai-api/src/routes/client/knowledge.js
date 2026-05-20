@@ -310,7 +310,7 @@ router.delete('/:id', async (req, res, next) => {
     if (result.rows.length > 0) {
       const doc = result.rows[0];
       try {
-        await storageService.deleteFile(process.env.GCS_KNOWLEDGE_BUCKET, doc.gcs_path);
+        await storageService.deleteFileFromBucket(process.env.GCS_KNOWLEDGE_BUCKET, doc.gcs_path);
       } catch (e) {
         console.warn('GCS deletion failed (non-fatal):', e.message);
       }

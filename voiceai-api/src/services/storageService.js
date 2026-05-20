@@ -89,6 +89,41 @@ const storageService = {
   recordingPath(clientId, callId, ext = 'wav') {
     return `recordings/${clientId}/${callId}.${ext}`;
   },
+
+  /**
+   * Upload buffer directly to a specific bucket
+   */
+  async uploadBuffer(bucketName, destPath, fileBuffer, mimeType = 'application/octet-stream') {
+    const storage = getStorage();
+    const bucket = storage.bucket(bucketName);
+    const file = bucket.file(destPath);
+
+    await file.save(fileBuffer, {
+      metadata: { contentType: mimeType },
+      resumable: false,
+    });
+    return `gs://${bucketName}/${destPath}`;
+  },
+
+  /**
+   * Download a file buffer from a specific bucket
+   */
+  async downloadBuffer(bucketName, destPath) {
+    const storage = getStorage();
+    const bucket = storage.bucket(bucketName);
+    const file = bucket.file(destPath);
+    
+    const [buffer] = await file.download();
+    return buffer;
+  },
+
+  /**
+   * Delete a file from a specific bucket
+   */
+  async deleteFileFromBucket(bucketName, destPath) {
+    const storage = getStorage();
+    await storage.bucket(bucketName).file(destPath).delete({ ignoreNotFound: true });
+  }
 };
 
 module.exports = { storageService };
