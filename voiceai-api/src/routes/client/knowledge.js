@@ -137,7 +137,7 @@ router.post('/text', async (req, res, next) => {
 
     if (agentResult.rows.length > 0) {
       const agentId = agentResult.rows[0].elevenlabs_agent_id;
-      elevenLabsService.createKnowledgeBaseDoc(agentId, { name, text })
+      elevenLabsService.uploadKnowledgeBaseFile(agentId, Buffer.from(text, 'utf-8'), `${name}.txt`, 'text/plain')
         .then(async (result) => {
           const kbId = result.id || result;
           await db.query(
@@ -260,7 +260,9 @@ router.put('/:id/text', async (req, res, next) => {
       }
 
       // Create new document
-      const newResult = await elevenLabsService.createKnowledgeBaseDoc(agentId, { name: name || doc.file_name, text });
+      const baseName = name || doc.file_name.replace('.txt', '');
+      const fileName = baseName.endsWith('.txt') ? baseName : `${baseName}.txt`;
+      const newResult = await elevenLabsService.uploadKnowledgeBaseFile(agentId, Buffer.from(text, 'utf-8'), fileName, 'text/plain');
       const newKbId = newResult.id || newResult;
 
       // Overwrite GCS file
