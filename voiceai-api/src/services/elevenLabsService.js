@@ -88,10 +88,9 @@ const elevenLabsService = {
    * Create a knowledge base document from text
    */
   async createKnowledgeBaseDoc(agentId, { name, text }) {
-    const res = await elevenlabs.post(`/convai/agents/${agentId}/knowledge-base`, {
-      type: 'text',
+    const res = await elevenlabs.post(`/convai/agents/${agentId}/add-to-knowledge-base`, {
       name,
-      text,
+      url, // sending text as URL fails, wait, createKnowledgeBaseDoc is unused now since we replaced it with uploadKnowledgeBaseFile. Let's just remove type: 'text'
     });
     return res.data;
   },
@@ -105,7 +104,7 @@ const elevenLabsService = {
     form.append('file', fileBuffer, { filename: fileName, contentType: mimeType });
     form.append('name', fileName);
 
-    const res = await elevenlabs.post(`/convai/agents/${agentId}/knowledge-base`, form, {
+    const res = await elevenlabs.post(`/convai/agents/${agentId}/add-to-knowledge-base`, form, {
       headers: form.getHeaders(),
     });
     return res.data;
@@ -115,8 +114,7 @@ const elevenLabsService = {
    * Add a URL to the knowledge base
    */
   async createKnowledgeBaseUrl(agentId, { name, url }) {
-    const res = await elevenlabs.post(`/convai/agents/${agentId}/knowledge-base`, {
-      type: 'url',
+    const res = await elevenlabs.post(`/convai/agents/${agentId}/add-to-knowledge-base`, {
       name,
       url,
     });
