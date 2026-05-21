@@ -104,9 +104,31 @@ const elevenLabsService = {
     form.append('file', fileBuffer, { filename: fileName, contentType: mimeType });
     form.append('name', fileName);
 
-    const res = await elevenlabs.post(`/convai/agents/${agentId}/add-to-knowledge-base`, form, {
+    const res = await elevenlabs.post(`/convai/knowledge-base`, form, {
       headers: form.getHeaders(),
     });
+    
+    const kbId = res.data.id;
+    
+    // Now attach it to the agent
+    const agentData = await this.getAgent(agentId);
+    const currentKb = agentData.conversation_config?.agent?.prompt?.knowledge_base || [];
+    currentKb.push({
+      id: kbId,
+      name: fileName,
+      type: 'file'
+    });
+    
+    await elevenlabs.patch(`/convai/agents/${agentId}`, {
+      conversation_config: {
+        agent: {
+          prompt: {
+            knowledge_base: currentKb
+          }
+        }
+      }
+    });
+    
     return res.data;
   },
 
@@ -114,10 +136,32 @@ const elevenLabsService = {
    * Add a URL to the knowledge base
    */
   async createKnowledgeBaseUrl(agentId, { name, url }) {
-    const res = await elevenlabs.post(`/convai/agents/${agentId}/add-to-knowledge-base`, {
+    const res = await elevenlabs.post(`/convai/knowledge-base`, {
       name,
       url,
     });
+    
+    const kbId = res.data.id;
+    
+    // Now attach it to the agent
+    const agentData = await this.getAgent(agentId);
+    const currentKb = agentData.conversation_config?.agent?.prompt?.knowledge_base || [];
+    currentKb.push({
+      id: kbId,
+      name,
+      type: 'url'
+    });
+    
+    await elevenlabs.patch(`/convai/agents/${agentId}`, {
+      conversation_config: {
+        agent: {
+          prompt: {
+            knowledge_base: currentKb
+          }
+        }
+      }
+    });
+    
     return res.data;
   },
 
@@ -125,7 +169,27 @@ const elevenLabsService = {
    * Delete a knowledge base document
    */
   async deleteKnowledgeBaseDoc(agentId, docId) {
-    await elevenlabs.delete(`/convai/agents/${agentId}/knowledge-base/${docId}`);
+    const agentData = await this.getAgent(agentId);
+    let currentKb = agentData.conversation_config?.agent?.prompt?.knowledge_base || [];
+    
+    // Remove it from the array
+    currentKb = currentKb.filter(doc => doc.id !== docId);
+    
+    await elevenlabs.patch(`/convai/agents/${agentId}`, {
+      conversation_config: {
+        agent: {
+          prompt: {
+            knowledge_base: currentKb
+          }
+        }
+      }
+    });
+
+    try {
+      await elevenlabs.delete(`/convai/knowledge-base/${docId}`);
+    } catch (e) {
+      console.error(`Failed to delete document ${docId} globally, but it is detached from agent.`, e.message);
+    }
   },
 
   /**
